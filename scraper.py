@@ -2,13 +2,21 @@ import requests
 import random
 import time
 import sched
+import atexit
 from collections import deque
 from smtplib import SMTP
 from email import message
 from bs4 import BeautifulSoup
 from multiprocessing import Process
+from selenium import webdriver
 
 scrapers = []
+
+options = webdriver.ChromeOptions()
+# options.add_argument("--headless")
+chrome = webdriver.Chrome(
+    executable_path="",
+    chrome_options=options)
 
 
 def time_this(function):
@@ -35,6 +43,7 @@ class item_scraper():
         self.item = item
         self.user = user
         self.options = options
+        self.url = self.get_url()
 
         self.update_page()
 
@@ -45,6 +54,29 @@ class item_scraper():
         self.schedule_event()
         self.scheduler.run()
 
+    def get_url(self):
+        chrome.get("https://chicago.craigslist.org/d/for-sale/search/sss")
+
+        show_catagories = chrome.find_element_by_class_name("maincats").find_element_by_class_name("closed")
+        show_catagories.click()
+
+        catagory_pane = chrome.find_element_by_class_name("search-options")
+        catagory_pane.click()
+
+        deselect_all = chrome.find_element_by_class_name("selectall").find_element_by_class_name("catcheck")
+        deselect_all.click()
+
+        categories = chrome.find_element_by_class_name("maincats")
+        for category in self.options["categories"]:
+            print("selecting", category, "...")
+            categories.find_element_by_xpath("//a[text()=\"" + category + "\" and @class=\"category\"]/../input").click()
+
+        search_bar = chrome.find_element_by_name("query")
+        search_bar.send_keys(self.item)
+        search_bar.submit()
+        print(chrome.current_url)
+        return chrome.current_url
+
     def schedule_event(self):
         delay = random.randrange(60, 180)
         # delay = random.randrange(1, 5)
@@ -54,11 +86,7 @@ class item_scraper():
             delay=delay, priority=1, action=self.check_for_new_items)
 
     def update_page(self):
-        self.soup = BeautifulSoup(
-            requests.get(
-                "https://chicago.craigslist.org/search/sss?query=" +
-                self.item + "&sort=rel",
-                headers=self.headers).text, "html.parser")
+        self.soup = BeautifulSoup(requests.get(self.url).text, "html.parser")
 
     def check_for_new_items(self):
         print("Checking for new items...")
@@ -85,7 +113,7 @@ class item_scraper():
         if self.complies_to_options(properties):
             with SMTP(host="smtp.gmail.com", port=587) as smtp_session:
                 smtp_session.starttls()
-                smtp_session.login("crprojectnotifier@gmail.com", "crproject")
+                smtp_session.login("crprojectnotifier@gmail.com", "")
 
                 msg = message.EmailMessage()
                 msg.set_content("A new item was found, here are the details-" +
@@ -155,22 +183,32 @@ class item_properties():
             return "This element was not listed"
 
 
+def exit():
+    chrome.quit()
+    print("###################################### EXITED CHROME ########################################")
+
+
+atexit.register(exit)
+
 if __name__ == "__main__":
     print("Run as main script.")
     p = Process(
         target=item_scraper,
         args=([
-            "crprojectnotifier@gmail.com", "laptop", {
+            "crprojectnotifier@gmail.com", "computer", {
                 "exclude": "abc",
                 "limit": (15, 100),
-                "renewals": True
+                "renewals": True,
+                "words_to_exclude": ["abc"],
+                "include_items_without_price": True,
+                "categories": ["arts & crafts", "electronics"]
             }
         ]))
     p.start()
 
 
 def initiate_scraper(user, item, renewals, price_limits, words_to_exclude,
-                     include_items_without_price):
+                     include_items_without_price, categories):
     print("Initiating a scraper with user =", user, "| item =", item,
           "| renewals =", renewals, "| price_limits =", price_limits[0], "<",
           price_limits[1], "| Words to exclude =", words_to_exclude)
@@ -181,6 +219,7 @@ def initiate_scraper(user, item, renewals, price_limits, words_to_exclude,
         "renewals": renewals == "1",
         "words_to_exclude": words_to_exclude,
         "include_items_without_price": include_items_without_price == "1",
+        "categories": categories
     }
 
     scraper_process = Process(
@@ -189,6 +228,4 @@ def initiate_scraper(user, item, renewals, price_limits, words_to_exclude,
     print("Process pid is", scraper_process.pid)
     scrapers.append(scraper_process)
 
-    # print("A scraper was not actually initiated.")
     print("A scraper was successfully initiated")
-
