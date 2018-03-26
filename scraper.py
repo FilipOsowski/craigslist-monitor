@@ -2,8 +2,9 @@ import requests
 import random
 import time
 import sched
+import pprint
 from collections import deque
-from bs4 import BeautifulSoup
+from lxml import html
 from multiprocessing import Process
 
 scrapers = []
@@ -22,7 +23,7 @@ class item_scraper():
         self.update_page()
 
         self.last_item_ids.extend(
-            int(item["data-pid"]) for item in self.get_new_items())
+            int(item.xpath("./@data-pid")[0]) for item in self.get_new_items())
         # For testing
         self.last_item_ids.popleft()
 
@@ -36,7 +37,7 @@ class item_scraper():
             delay=delay, priority=1, action=self.check_for_new_items)
 
     def update_page(self):
-        self.soup = BeautifulSoup(requests.get(self.url).text, "html.parser")
+        self.parsed_html = html.fromstring(requests.get(self.url).text)
 
     def check_for_new_items(self):
         print("Checking for new items...")
@@ -44,19 +45,20 @@ class item_scraper():
         self.update_page()
         new_items = self.get_new_items()
         new_item = next(new_items)
-        new_item_id = int(new_item["data-pid"])
+        new_item_id = int(new_item.xpath("./@data-pid")[0])
 
         while new_item_id not in self.last_item_ids:
             self.last_item_ids.appendleft(new_item_id)
             print("Found new item! Id is", new_item_id)
-            print(item_properties())
+            # print(item_properties())
+            self.parse_item(new_item)
             new_item = next(new_items)
-            new_item_id = int(new_item["data-pid"])
+            new_item_id = int(new_item.xpath("./@data-pid")[0])
 
         self.schedule_event()
 
     def get_new_items(self):
-        return (item for item in self.soup.find_all(class_="result-row"))
+        return (item for item in self.parsed_html.xpath("//li[@class=\"result-row\"]"))
 
     def complies_to_options(self, properties):
         if self.options["excluded_words"]:
@@ -74,41 +76,18 @@ class item_scraper():
         print("Returned True because the item complies to the user's options.")
         return True
     
-    def parse_item(item)
+    def parse_item(self, item):
+            link = item.xpath("./a/@href")[0]
+            name = item.xpath("(.//a)[2]/text()")[0]
+            time = item.xpath(".//time/@title")[0]
+            is_renewal = bool(item.xpath("./@data-repost-of"))
+            location = item.xpath(".//span[@class=\"result-hood\"]/text()")[0]
+            price = item.xpath("(.//span[@class=\"result-price\"])[1]/text()")[0]
+            pprint.pprint({"link": link, "name": name, "time": time, "is_renewal": is_renewal, "location": location, "price": price}, indent=4, width=120)
 
 
-class item_properties():
-    def __init__(self, item_soup):
-        self.item_soup = item_soup
-        self.parse_item()
-
-    def parse_item(self):
-        address_and_name = self.item_soup.find_all("a")[1]
-
-        self.link = address_and_name["href"]
-        self.name = address_and_name.text
-        self.time = self.item_soup.find(class_="result-date")["title"]
-        self.is_repost = self.item_soup.has_attr("data-repost-of")
-
-        self.location = self.find_safely(
-            function=self.item_soup.find, class_="result-hood")
-        self.price = int(
-            self.find_safely(
-                function=self.item_soup.find, class_="result-price")[1:])
-
-    def __str__(self):
-        return str(
-            [self.link, self.name, self.price, self.time, self.location])
-
-    def find_safely(self, function, class_):
-        try:
-            return function(class_=class_).text
-        except AttributeError:
-            return "This element was not listed"
-
-
-def initiate_scraper(url, renewals, excluded_words):
-    print("URL =", url, "| renewals =", renewals, "| Excluded words =", excluded_words)
+def initiate_scraper(url, name, renewals, excluded_words):
+    print("URL =", url, "| renewals =", renewals, "| Excluded words =", excluded_words, "| Name =", name)
 
     options = {
         "renewals": renewals,
@@ -123,3 +102,5 @@ def initiate_scraper(url, renewals, excluded_words):
     # print("A scraper was not actually initiated.")
     print("A scraper was successfully initiated")
 
+if __name__ == "__main__":
+    initiate_scraper("https://chicago.craigslist.org/search/sss?query=laptop&sort=rel", True, [])
