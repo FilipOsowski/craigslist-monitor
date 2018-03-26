@@ -126,7 +126,7 @@ class item_scraper():
 
     def complies_to_options(self, properties):
         for word in properties.name.split():
-            if word.lower() in self.options["exclude"]:
+            if word.lower() in self.options["words_to_exclude"]:
                 print(
                     "Returned False because an excluded word was found in the item name."
                 )
@@ -196,7 +196,6 @@ if __name__ == "__main__":
         target=item_scraper,
         args=([
             "crprojectnotifier@gmail.com", "computer", {
-                "exclude": "abc",
                 "limit": (15, 100),
                 "renewals": True,
                 "words_to_exclude": ["abc"],
@@ -214,7 +213,6 @@ def initiate_scraper(user, item, renewals, price_limits, words_to_exclude,
           price_limits[1], "| Words to exclude =", words_to_exclude)
 
     options = {
-        "exclude": [word.lower() for word in words_to_exclude],
         "limit": (int(price_limits[0]), int(price_limits[1])),
         "renewals": renewals == "1",
         "words_to_exclude": words_to_exclude,
