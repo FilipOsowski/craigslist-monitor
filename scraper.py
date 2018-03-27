@@ -7,7 +7,8 @@ from collections import deque
 from lxml import html
 from multiprocessing import Process
 
-scrapers = []
+scrapers = {}
+pretty_print = pprint.PrettyPrinter(indent=4, width=120)
 
 
 class item_scraper():
@@ -83,10 +84,10 @@ class item_scraper():
             is_renewal = bool(item.xpath("./@data-repost-of"))
             location = item.xpath(".//span[@class=\"result-hood\"]/text()")[0]
             price = item.xpath("(.//span[@class=\"result-price\"])[1]/text()")[0]
-            pprint.pprint({"link": link, "name": name, "time": time, "is_renewal": is_renewal, "location": location, "price": price}, indent=4, width=120)
+            pretty_print.pprint({"link": link, "name": name, "time": time, "is_renewal": is_renewal, "location": location, "price": price})
 
 
-def initiate_scraper(url, name, renewals, excluded_words):
+def create_scraper(url, name, renewals, excluded_words):
     print("URL =", url, "| renewals =", renewals, "| Excluded words =", excluded_words, "| Name =", name)
 
     options = {
@@ -94,13 +95,23 @@ def initiate_scraper(url, name, renewals, excluded_words):
         "excluded_words": excluded_words,
     }
 
-    scraper_process = Process(target=item_scraper, args=([url, options]))
-    scraper_process.start()
-    print("Process pid is", scraper_process.pid)
-    scrapers.append(scraper_process)
+    if name not in scrapers:
+        scraper_process = Process(target=item_scraper, args=([url, options]))
+        scraper_process.start()
+        print("Process pid is", scraper_process.pid)
+        scrapers[name] = scraper_process.pid
+        print("A scraper was successfully created")
+    else:
+        print("There is already a scraper named " + name)
 
-    # print("A scraper was not actually initiated.")
-    print("A scraper was successfully initiated")
+
+def list_scrapers():
+    pretty_print.pprint(scrapers)
+
+
+# def kill_scraper(name):
+    # if name in scrapers:
+        # scrapers[name].
 
 if __name__ == "__main__":
     initiate_scraper("https://chicago.craigslist.org/search/sss?query=laptop&sort=rel", True, [])
