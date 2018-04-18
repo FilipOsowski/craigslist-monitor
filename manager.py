@@ -3,12 +3,14 @@ from daemon import DaemonContext
 from sys import exit
 import atexit
 
-log_file, pid_file, pipe = (None for _ in range(3))
+log_file, pid_file, manager_socket = (None for _ in range(3))
 def main():
+    import socket
+    import socket_tools
+    import multiprocessing
     from time import sleep
     from ast import literal_eval
     from scraper import create_scraper
-    import multiprocessing
     print("The daemon has started")
 
     scrapers = {}
@@ -19,49 +21,71 @@ def main():
     should_run = True
 
     while should_run:
-        sleep(1)
-        cli_output = pipe.readline()
-        if cli_output != "":
-            prefix = cli_output.split()[0]
-            print("Received: " + cli_output)
-            if prefix == "quit":
-                should_run = False
-            elif prefix == "add":
-                scraper_kwargs = literal_eval(cli_output[3:])
-                scraper_name = scraper_kwargs.pop("name")
+
+        cli_connection, addr = manager_socket.accept()
+        cli_output = socket_tools.receive(cli_connection)
+        prefix = cli_output.split()[0]
+
+        print("Received: " + cli_output)
+        if prefix == "quit":
+            should_run = False
+            for scraper in scrapers:
+                scrapers[scraper]["should_quit"].set()
+            socket_tools.send(sock=cli_connection, msg="Quitting manager...")
+        elif prefix == "add":
+            scraper_kwargs = literal_eval(cli_output[4:])
+            scraper_name = scraper_kwargs.pop("name")
+
+            if scraper_name in scrapers:
+                socket_tools.send(sock=cli_connection, msg="You can't use the same name for multiple scrapers.")
+            else:
                 should_quit = multiprocessing.Event()
                 scraper_kwargs["should_quit"] = should_quit
 
                 scraper_process = multiprocessing.Process(target=create_scraper, kwargs=scraper_kwargs)
                 scraper_process.start()
-                print(scraper_process.pid)
                 scrapers[scraper_name] = {"process": scraper_process, "should_quit": should_quit}
-            elif prefix == "list":
-                pipe.write(str(scrapers))
+                print(scraper_process.pid)
+                socket_tools.send(sock=cli_connection, msg="Successfully added scraper.")
+        elif prefix == "list":
+            socket_tools.send(sock=cli_connection, msg=str([kw for kw in scrapers]))
+        elif prefix == "stop":
+            scraper_name = cli_output[5:]
+            if scraper_name in scrapers:
+                scrapers[scraper_name]["should_quit"].set()
+                socket_tools.send(sock=cli_connection, msg="Successfully stopped scraper named " + scraper_name)
+                del scrapers[scraper_name]
+            else:
+                socket_tools.send(sock=cli_connection, msg="There is no scraper named " + scraper_name)
 
 
-    print("Quitting manager...")
+        cli_connection.close()
 
 
 def create_manager():
-    global log_file, pid_file, pipe
+    import socket
+    global log_file, pid_file, manager_socket
+
+    manager_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    manager_socket.bind(".craigslist_monitor_socket")
+    manager_socket.listen(1)
+
     log_file = open("log", "w+")
     log_file.truncate()
     pid_file = open(".pid", "w+")
-    pipe = os.fdopen(os.open(".craigslist_monitor_pipe", os.O_NONBLOCK | os.O_RDONLY))
 
-    with DaemonContext(files_preserve=[pipe.fileno(), log_file.fileno(), pid_file.fileno()], stdout=log_file, stderr=log_file, working_directory=os.getcwd()):
+    with DaemonContext(files_preserve=[manager_socket.fileno(), log_file.fileno(), pid_file.fileno()], stdout=log_file, stderr=log_file, working_directory=os.getcwd()):
         main()
     
 def clean_up():
     os.remove(".pid")
-    os.remove(".craigslist_monitor_pipe")
-    pipe.close()
+    os.remove(".craigslist_monitor_socket")
     log_file.close()
+    manager_socket.close()
     print("Successfully exited manager.\n\n\n\n")
 
 atexit.register(clean_up)
 
-if __name__ == "__main__":
-    create_manager()
+# if __name__ == "__main__":
+    # create_manager()
 
