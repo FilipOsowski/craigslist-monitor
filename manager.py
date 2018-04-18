@@ -4,6 +4,8 @@ from sys import exit
 import atexit
 
 log_file, pid_file, manager_socket = (None for _ in range(3))
+
+
 def main():
     import socket
     import socket_tools
@@ -11,7 +13,7 @@ def main():
     from time import sleep
     from ast import literal_eval
     from scraper import create_scraper
-    print("The daemon has started")
+    print("The manager has started.")
 
     scrapers = {}
 
@@ -45,20 +47,21 @@ def main():
                 scraper_process = multiprocessing.Process(target=create_scraper, kwargs=scraper_kwargs)
                 scraper_process.start()
                 scrapers[scraper_name] = {"process": scraper_process, "should_quit": should_quit}
-                print(scraper_process.pid)
+                print("Started new scraper, name =" scraper_name, "pid =", scraper_process.getpid())
                 socket_tools.send(sock=cli_connection, msg="Successfully added scraper.")
         elif prefix == "list":
             socket_tools.send(sock=cli_connection, msg=str([kw for kw in scrapers]))
         elif prefix == "stop":
             scraper_name = cli_output[5:]
             if scraper_name in scrapers:
+                print("Stopping scraper, name =" scraper_name, "pid =", scrapers[scraper_name]["process"].getpid())
                 scrapers[scraper_name]["should_quit"].set()
                 socket_tools.send(sock=cli_connection, msg="Successfully stopped scraper named " + scraper_name)
                 del scrapers[scraper_name]
             else:
                 socket_tools.send(sock=cli_connection, msg="There is no scraper named " + scraper_name)
 
-
+        print("Quitting manager...")
         cli_connection.close()
 
 
@@ -82,10 +85,6 @@ def clean_up():
     os.remove(".craigslist_monitor_socket")
     log_file.close()
     manager_socket.close()
-    print("Successfully exited manager.\n\n\n\n")
+    print("Successfully exited manager.\n")
 
 atexit.register(clean_up)
-
-# if __name__ == "__main__":
-    # create_manager()
-

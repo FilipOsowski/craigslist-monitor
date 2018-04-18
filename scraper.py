@@ -11,7 +11,7 @@ class item_scraper():
     item = ""
 
     def __init__(self, monitor, options, should_quit):
-        log("Initialized an item_scraper.")
+        log("Created a scraper.")
         self.options = options
         if monitor[:7] == "https:":
             self.monitor_url = monitor
@@ -20,18 +20,16 @@ class item_scraper():
 
 
             self.monitor_url = response.url + "/search/sss?query=" + monitor + "&sort=rel"
-        log(self.monitor_url)
         self.should_quit = should_quit
 
         self.update_page()
         self.last_item_ids.extend(
             int(item.xpath("./@data-pid")[0]) for item in self.get_new_items())
         # For testing
-        self.last_item_ids.popleft()
+        # self.last_item_ids.popleft()
         self.check_for_new_items()
 
     def wait(self, seconds):
-        log("Waiting for", seconds, "seconds..")
         for _ in range(seconds):
             sleep(1)
             if self.should_quit.is_set():
@@ -52,13 +50,17 @@ class item_scraper():
 
             while new_item_id not in self.last_item_ids:
                 self.last_item_ids.appendleft(new_item_id)
-                log("Found new item! Id is", new_item_id)
-                self.parse_item(new_item)
+                properties = self.parse_item(new_item)
+                
+                if self.complies_to_options(properties):
+                    log("Found new item-", properties)
+
                 new_item = next(new_items)
                 new_item_id = int(new_item.xpath("./@data-pid")[0])
 
             if self.wait(random.randrange(60, 180)):
                 import os
+                log("Stopped scraper.")
                 log_file.close()
                 break
 
@@ -67,18 +69,13 @@ class item_scraper():
 
     def complies_to_options(self, properties):
         if self.options["exclude_words"]:
-            for word in properties.name.split():
+            for word in properties["name"].split():
                 if word.lower() in self.options["exclude_words"]:
-                    log(
-                        "Returned False because an excluded word was found in the item name."
-                    )
                     return False
 
-        if not self.options["renewals"] and properties.is_repost:
-            log("Returned False because the item was a renewal.")
+        if not self.options["renewals"] and properties["is_renewal"]:
             return False
 
-        log("Returned True because the item complies to the user's options.")
         return True
     
     def parse_item(self, item):
@@ -86,11 +83,14 @@ class item_scraper():
             name = item.xpath("(.//a)[2]/text()")[0]
             time = item.xpath(".//time/@title")[0]
             is_renewal = bool(item.xpath("./@data-repost-of"))
+
             price = item.xpath("(.//span[@class=\"result-price\"])[1]/text()")
             price = price[0] if price else "Price not listed"
             location = item.xpath(".//span[@class=\"result-hood\"]/text()")
             location = location[0] if location else "Location not listed"
-            log(link, name, time, is_renewal, price, location)
+
+            properties = {"name": name, "price": price, "location": location, "time": time, "link": link, "is_renewal": is_renewal}
+            return properties
 
 
 def log(*args):
@@ -102,7 +102,6 @@ def create_scraper(monitor, renewals, exclude_words, should_quit, output):
     log_file = open(output, "w+")
     sys.stdout = log_file
     sys.stderr = log_file
-    log("AFTER")
 
     options = {
         "renewals": renewals,
