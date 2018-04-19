@@ -39,8 +39,12 @@ class item_scraper():
 
         self.check_for_new_items()
 
+    # Waits the specified amount of seconds in intervals of one second. After
+    # each second, the should_quit event is checked. If the event is set, the
+    # wait function returns True scraper main loop is exited. Else, the wait
+    # function returns False after it has waited out the specified amount of
+    # seconds and the scraper's main loop continues.
     def wait(self, seconds):
-        log("Waiting for", seconds)
         for _ in range(seconds):
             sleep(1)
             if self.should_quit.is_set():
