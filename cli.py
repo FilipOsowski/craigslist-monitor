@@ -101,6 +101,7 @@ add_item.add_argument("monitor", help="The url of a craigslist search or the ite
 add_item.add_argument("output", help="The file to which items found by the monitor will be written to")
 add_item.add_argument("-r", "--renewals", action="store_true", help="Include old posts that are renewed.")
 add_item.add_argument("-e", "--exclude-words", nargs="+", metavar="word", default=[], help="Exclude posts that contain these words (not case sensative).")
+add_item.add_argument("-t", "--time-refresh", nargs=2, metavar="pos_int", type=int, default=[60, 180], help="The two positive integers used with randrange(lower, upper) to determine how long (in seconds) until the scraper checks for new items (first integer must be lower than the second). The default is 60 and 180.")
 add_item.set_defaults(func=add)
 
 # The manager interface handles all commands for managing existing scrapers (and the manager itself).
@@ -112,6 +113,14 @@ manager_options.add_argument("-s", "--stop", nargs=1, metavar="scraper_name", he
 manager_options.set_defaults(func=manager)
 kwargs = vars(monitor.parse_args())
 
+# Checks to see if the arguments of time_refresh comply to random.randrange
+# expectations. (lower and upper should both be positive and lower > upper)
+if "time_refresh" in kwargs:
+    lower, upper = kwargs["time_refresh"]
+    if not (lower < upper and lower >= 0 and upper >= 0):
+
+        # An error is thrown if these expectations are not met.
+        raise argparse.ArgumentTypeError("Invalid time_refresh: The first integer must be greater than the second integer and both integers must be positive.")
 # Removing the "func" argument allows the kwargs to submitted directly to the scraper.
 if kwargs:
     target_func = kwargs.pop("func")

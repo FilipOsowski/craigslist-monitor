@@ -40,6 +40,7 @@ class item_scraper():
         self.check_for_new_items()
 
     def wait(self, seconds):
+        log("Waiting for", seconds)
         for _ in range(seconds):
             sleep(1)
             if self.should_quit.is_set():
@@ -76,7 +77,7 @@ class item_scraper():
 
             # If the scraper does not receive a signal to quit, it proceeds to
             # check for new items.
-            if self.wait(random.randrange(60, 180)):
+            if self.wait(random.randrange(self.options["refresh"][0], self.options["refresh"][1])):
                 import os
                 log("Stopped scraper.")
                 log_file.close()
@@ -122,7 +123,7 @@ def log(*args):
     log_file.flush()
 
 # Interface for creating the scraper.
-def create_scraper(monitor, renewals, exclude_words, should_quit, output):
+def create_scraper(monitor, renewals, exclude_words, should_quit, output, time_refresh):
     global log_file
 
     # Uses the specified file output for the stdout and stderr of the scraper.
@@ -133,6 +134,7 @@ def create_scraper(monitor, renewals, exclude_words, should_quit, output):
     options = {
         "renewals": renewals,
         "exclude_words": exclude_words,
+        "refresh": time_refresh
     }
 
     item_scraper(monitor, options, should_quit)
