@@ -11,10 +11,10 @@ log_file, pid_file, manager_socket = (None for _ in range(3))
 
 
 def main():
-    import socket_tools
-    import multiprocessing
+    from cmonitor import socket_tools
+    from cmonitor import scraper
     from ast import literal_eval
-    from scraper import create_scraper
+    import multiprocessing
     print("The manager has started.")
 
     # The scrapers dictionary keeps track of attributes of active scrapers.
@@ -76,7 +76,7 @@ def main():
                 # The scraper process is started using the multiprocessing
                 # so as to not block the manager. The kwargs to the manager are
                 # from the cli's message.
-                scraper_process = multiprocessing.Process(target=create_scraper, kwargs=scraper_kwargs)
+                scraper_process = multiprocessing.Process(target=scraper.create_scraper, kwargs=scraper_kwargs)
                 scraper_process.start()
                 scrapers[scraper_name] = {"process": scraper_process, "should_quit": should_quit}
                 print("Started new scraper, name =", scraper_name, ", pid =", scraper_process.pid)
@@ -107,11 +107,13 @@ def main():
 
 def create_manager():
     import socket
+    import stat
     global log_file, pid_file, manager_socket
 
     # Creates the unix domain socket for communication with between the
     # manager and the cli.
     manager_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    os.chmod(".craigslist_monitor_socket", stat.S_IRWXO | stat.S_IRWXU | stat.S_IRWXG)
     manager_socket.bind(".craigslist_monitor_socket")
     manager_socket.listen(1)
 

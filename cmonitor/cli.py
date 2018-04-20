@@ -64,9 +64,9 @@ def manager(kwargs):
     # calling its start function.
     @check_manager(should_exist=False)
     def start_manager():
-        from manager import create_manager
+        from cmonitor import manager
         print("Creating the manager...")
-        create_manager()
+        manager.create_manager()
 
     # If a manager command is specified, it is submitted to the manager_options
     # function. Else, a manager is initialized.
@@ -81,7 +81,7 @@ def manager(kwargs):
 # Utilizes the socket_tools module to exchange information with the manager.
 # Also closes and keeps track of the client socket.
 def send_to_manager(msg, print_resp=True):
-    import socket_tools
+    from cmonitor import socket_tools
     client_socket = socket_tools.send(msg)
     response = socket_tools.receive(client_socket)
     client_socket.close()
