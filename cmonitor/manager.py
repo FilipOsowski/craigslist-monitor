@@ -1,5 +1,6 @@
 import os
 import atexit
+import logging
 from daemon import DaemonContext
 
 # log_file: The file that the stdout and stderr of the manager is written to.
@@ -15,7 +16,7 @@ def main():
     from cmonitor import scraper
     from ast import literal_eval
     import multiprocessing
-    print("The manager has started.")
+    logging.info("The manager has started.")
 
     # The scrapers dictionary keeps track of attributes of active scrapers.
     # name: The name of the scraper.
@@ -40,6 +41,8 @@ def main():
         prefix = cli_output.split()[0]
 
         print("Received: " + cli_output)
+        logging.info("Received message from cli.")
+        logging.debug(f"Received: {cli_output}")
 
         # The manager performs an action depending on the prefix to the cli's
         # message. The manager also sends a message to the (waiting)
@@ -51,6 +54,7 @@ def main():
             should_run = False
             for scraper in scrapers:
                 scrapers[scraper]["should_quit"].set()
+            logging.info("Received message to quit.")
             socket_tools.send(sock=cli_connection, msg="Quitting the manager...")
 
         # If the manager is ordered to add a scraper, it checks if the
@@ -78,7 +82,8 @@ def main():
                 scraper_process = multiprocessing.Process(target=scraper.create_scraper, kwargs=scraper_kwargs)
                 scraper_process.start()
                 scrapers[scraper_name] = {"process": scraper_process, "should_quit": should_quit}
-                print("Started new scraper, name =", scraper_name, ", pid =", scraper_process.pid)
+                logging.info("Started a new scraper.")
+                logging.debug(f"New scraper: name = {scraper_name}, pid = {scraper_process.pid}")
                 socket_tools.send(sock=cli_connection, msg="Successfully added scraper.")
 
         # If ordered to list, the scraper sends a message to the cli a list
@@ -91,11 +96,12 @@ def main():
         elif prefix == "stop":
             scraper_name = cli_output[5:]
             if scraper_name in scrapers:
-                print("Stopping scraper, name =", scraper_name, ", pid =", scrapers[scraper_name]["process"].pid)
 
                 # The scraper's should_quit event is set, causing the scraper's
                 # main loop to exit.
                 scrapers[scraper_name]["should_quit"].set()
+                logging.info("Sent signal for a scraper to exit.")
+                logging.debug(f"Exiting scraper: name = {scraper_name}, pid = {scrapers[scraper_name]['process'].pid}")
                 socket_tools.send(sock=cli_connection, msg="Successfully stopped scraper named " + scraper_name)
                 del scrapers[scraper_name]
             else:
@@ -124,12 +130,14 @@ def create_manager():
     log_file.truncate()
     pid_file = open(".pid", "w+")
 
+    logging.basicConfig(filename="log", level=logging.DEBUG)
+
     # Sets up the context for the manager daemon to run in.
     daemon_context = DaemonContext()
 
     # To keep the log_file, manager_socket, and pid_file accessible after
     # opening the daemon, they are specified to be preserved.
-    daemon_context.files_preserve = [manager_socket.fileno(), log_file.fileno(), pid_file.fileno()] 
+    daemon_context.files_preserve = [manager_socket.fileno(), log_file.fileno(), pid_file.fileno(), logging.root.handlers[0].stream.fileno()] 
 
     # The manager daemon's stderr and stdout is set to be sent to the log_file.
     daemon_context.stderr = log_file
