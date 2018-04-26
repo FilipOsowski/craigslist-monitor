@@ -82,7 +82,6 @@ class item_scraper():
             # If the scraper does not receive a signal to quit, it proceeds to
             # check for new items.
             if self.wait(random.randrange(self.options["refresh"][0], self.options["refresh"][1])):
-                import os
                 log("Stopped scraper.")
                 log_file.close()
                 break
@@ -128,10 +127,11 @@ def log(*args):
 
 # Interface for creating the scraper.
 def create_scraper(monitor, renewals, exclude_words, should_quit, output, time_refresh):
+    import os
     global log_file
 
     # Uses the specified file output for the stdout and stderr of the scraper.
-    log_file = open(output, "w+")
+    log_file = open(os.path.join(os.getcwd(), output), "w+")
     sys.stdout = log_file
     sys.stderr = log_file
 

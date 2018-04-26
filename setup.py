@@ -13,6 +13,7 @@ with open(path.join(my_loc, 'README.md'), encoding='utf-8') as readme:
 setup(
         name="craigslist_monitor",
         version="0.1",
+        licesnce="MIT",
         packages=find_packages(),
         python_requires="~=3.0",
         description="A monitor for craigslist searches.",

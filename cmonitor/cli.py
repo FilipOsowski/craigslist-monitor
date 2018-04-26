@@ -1,4 +1,5 @@
 import argparse
+import os
 
 
 # A decorator that checks for the manager's existence and depending on the
@@ -9,8 +10,9 @@ def check_manager(should_exist):
     # file (created by the manager).
     def decorator(function):
         result = None
+        my_loc = os.path.dirname(os.path.abspath(__file__))
         try:
-            with open(".pid"):
+            with open(os.path.join(my_loc, ".pid")):
                 result = True
         except FileNotFoundError:
             result = False
@@ -35,6 +37,7 @@ def check_manager(should_exist):
 # includes the specifications for the scraper.
 @check_manager(should_exist=True)
 def add(kwargs):
+    kwargs["output"] = os.path.join(os.getcwd(), kwargs["output"])
     send_to_manager("add " + str(kwargs))
 
 
@@ -64,9 +67,15 @@ def manager(kwargs):
     # calling its start function.
     @check_manager(should_exist=False)
     def start_manager():
-        from cmonitor import manager
-        print("Creating the manager...")
-        manager.create_manager()
+
+        # A manager requires the creation of a Unix Domain Socket and changing
+        # its permissions (so that the manager can be controlled w/o root).
+        if os.getuid() != 0:
+            print("You need root privileges to create the manager.")
+        else:
+            from cmonitor import manager
+            print("Creating the manager...")
+            manager.create_manager()
 
     # If a manager command is specified, it is submitted to the manager_options
     # function. Else, a manager is initialized.
@@ -134,6 +143,3 @@ def cli():
 
         # If the cli is used without any arguments, help is printed.
         monitor.print_help()
-
-if __name__ == "__main__":
-    cli()

@@ -1,0 +1,3 @@
+[console_scripts]
+cmonitor = cmonitor.cli:cli
+

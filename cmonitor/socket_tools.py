@@ -11,8 +11,12 @@ import socket
 # Uses a newly created socket or one that is passed in to send a message
 # between the cli and the manager.
 def send(msg, sock=None):
+    import os
+
     if not sock:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        my_loc = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(my_loc)
         sock.connect(".craigslist_monitor_socket")
 
     # The length of the message in bytes is determined and made 6 characters

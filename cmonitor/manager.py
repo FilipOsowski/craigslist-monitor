@@ -1,13 +1,13 @@
 import os
-from daemon import DaemonContext
 import atexit
+from daemon import DaemonContext
 
 # log_file: The file that the stdout and stderr of the manager is written to.
 # pid_file: Stores the pid of the manager daemon (used for checking the
 # manager's existence)
 # manager_socket: The unix domain socket used for communication between the cli
 # and the manager.
-log_file, pid_file, manager_socket = (None for _ in range(3))
+log_file, pid_file, manager_socket, my_loc = (None for _ in range(4))
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
 
     # The scrapers dictionary keeps track of attributes of active scrapers.
     # name: The name of the scraper.
-    # process: The scraper's process as returned by multiprocessing.Process 
+    # process: The scraper's process as returned by multiprocessing.Process
     # should_quit: A multiprocessing.Event instance that is used for telling
     # the scraper when to quit.
     scrapers = {}
@@ -67,7 +67,6 @@ def main():
             if scraper_name in scrapers:
                 socket_tools.send(sock=cli_connection, msg="You can't use the same name for multiple scrapers.")
             else:
-                
                 # Setting the event (later passed to and monitored by the
                 # scraper) tells the scraper when to quit.
                 should_quit = multiprocessing.Event()
@@ -108,20 +107,24 @@ def main():
 def create_manager():
     import socket
     import stat
-    global log_file, pid_file, manager_socket
+    import os
+    global log_file, pid_file, manager_socket, my_loc
+
+    my_loc = os.path.dirname(os.path.realpath(__file__))
+    os.chdir(my_loc)
 
     # Creates the unix domain socket for communication with between the
     # manager and the cli.
     manager_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    os.chmod(".craigslist_monitor_socket", stat.S_IRWXO | stat.S_IRWXU | stat.S_IRWXG)
     manager_socket.bind(".craigslist_monitor_socket")
+    os.chmod(".craigslist_monitor_socket", stat.S_IROTH | stat.S_IWOTH | stat.S_IWGRP | stat.S_IRGRP | stat.S_IRUSR | stat.S_IWUSR)
     manager_socket.listen(1)
 
     log_file = open("log", "w+")
     log_file.truncate()
     pid_file = open(".pid", "w+")
 
-    # Sets up the context for the manager daemon to run in. 
+    # Sets up the context for the manager daemon to run in.
     daemon_context = DaemonContext()
 
     # To keep the log_file, manager_socket, and pid_file accessible after
@@ -140,8 +143,9 @@ def create_manager():
     # daemon process.
     with daemon_context:
         main()
-    
-# Closes and removes resources that are unnecessary when the manager 
+
+
+# Closes and removes resources that are unnecessary when the manager
 # is not running.
 def clean_up():
     os.remove(".pid")
@@ -149,5 +153,6 @@ def clean_up():
     log_file.close()
     manager_socket.close()
     print("Successfully exited manager.\n")
+
 
 atexit.register(clean_up)
