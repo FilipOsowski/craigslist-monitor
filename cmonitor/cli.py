@@ -30,6 +30,7 @@ def check_manager(should_exist):
                     print("The manager does not exist.")
 
         return wrapper
+
     return decorator
 
 
@@ -94,32 +95,75 @@ def send_to_manager(msg, print_resp=True):
     client_socket = socket_tools.send(msg)
     response = socket_tools.receive(client_socket)
     client_socket.close()
-    
+
     if print_resp:
         print(response)
     return response
-    
+
+
 def cli():
-    monitor = argparse.ArgumentParser(description="Monitors a craigslist search for new items.")
-    monitor_subparsers = monitor.add_subparsers(help="Use <sub-command> followed by -h for further help.")
+    monitor = argparse.ArgumentParser(
+        description="Monitors a craigslist search for new items.")
+    monitor_subparsers = monitor.add_subparsers(
+        help="Use <sub-command> followed by -h for further help.")
 
     # The add interface handles the addition and customization of scrapers.
-    add_item = monitor_subparsers.add_parser("add", description="Add an item (craigslist search) to be monitored.")
+    add_item = monitor_subparsers.add_parser(
+        "add", description="Add an item (craigslist search) to be monitored.")
     add_item.add_argument("name", help="The name of the process.")
-    add_item.add_argument("monitor", help="The url of a craigslist search or the item name to be monitored.")
-    add_item.add_argument("output", help="The file to which items found by the monitor will be written to")
-    add_item.add_argument("-r", "--renewals", action="store_true", help="Include old posts that are renewed.")
-    add_item.add_argument("-e", "--exclude-words", nargs="+", metavar="word", default=[], help="Exclude posts that contain these words (not case sensitive).")
-    add_item.add_argument("-t", "--time-refresh", nargs=2, metavar="pos_int", type=int, default=[60, 180], help="The two positive integers used with randrange(lower, upper) to determine how long (in seconds) until the scraper checks for new items (first integer must be lower than the second). The default is 60 and 180.")
+    add_item.add_argument(
+        "monitor",
+        help="The url of a craigslist search or the item name to be monitored."
+    )
+    add_item.add_argument(
+        "output",
+        help="The file to which items found by the monitor will be written to")
+    add_item.add_argument(
+        "-r",
+        "--renewals",
+        action="store_true",
+        help="Include old posts that are renewed.")
+    add_item.add_argument(
+        "-e",
+        "--exclude-words",
+        nargs="+",
+        metavar="word",
+        default=[],
+        help="Exclude posts that contain these words (not case sensitive).")
+    add_item.add_argument(
+        "-t",
+        "--time-refresh",
+        nargs=2,
+        metavar="pos_int",
+        type=int,
+        default=[60, 180],
+        help=
+        "The two positive integers used with randrange(lower, upper) to determine how long (in seconds) until the scraper checks for new items (first integer must be lower than the second). The default is 60 and 180."
+    )
     add_item.set_defaults(func=add)
 
     # The manager interface handles all commands for managing existing
     # scrapers (and the manager itself).
-    manager_interface = monitor_subparsers.add_parser("manager", description="Starts the manager if issued with no commands.")
+    manager_interface = monitor_subparsers.add_parser(
+        "manager",
+        description="Starts the manager if issued with no commands.")
     manager_options = manager_interface.add_mutually_exclusive_group()
-    manager_options.add_argument("-q", "--quit", help="Quits the manager and all scrapers", action="store_true")
-    manager_options.add_argument("-l", "--list", help="List all the currently running scrapers", action="store_true")
-    manager_options.add_argument("-s", "--stop", nargs=1, metavar="scraper_name", help="Stop the named scraper")
+    manager_options.add_argument(
+        "-q",
+        "--quit",
+        help="Quits the manager and all scrapers",
+        action="store_true")
+    manager_options.add_argument(
+        "-l",
+        "--list",
+        help="List all the currently running scrapers",
+        action="store_true")
+    manager_options.add_argument(
+        "-s",
+        "--stop",
+        nargs=1,
+        metavar="scraper_name",
+        help="Stop the named scraper")
     manager_options.set_defaults(func=manager)
     kwargs = vars(monitor.parse_args())
 
@@ -132,7 +176,9 @@ def cli():
             if not (lower < upper and lower >= 0 and upper >= 0):
 
                 # An error is thrown if these expectations are not met.
-                raise argparse.ArgumentTypeError("Invalid time_refresh: The first integer must be greater than the second integer and both integers must be positive.")
+                raise argparse.ArgumentTypeError(
+                    "Invalid time_refresh: The first integer must be greater than the second integer and both integers must be positive."
+                )
 
         # Removing the "func" argument allows the kwargs to submitted directly
         # to the scraper.

@@ -21,7 +21,11 @@ setup(
         author="Filip Osowski",
         author_email="filiposowski5@gmail.com",
         url="https://github.com/FilipOsowski/craigslist-monitor",
-        install_requires=["python-daemon>=2.0.0", "requests>=2.0.0", "lxml>=4.0.0"],
+        install_requires=[
+            "python-daemon>=2.0.0",
+            "requests>=2.0.0",
+            "lxml>=4.0.0"
+        ],
         classifiers=[
             "Development Status :: 3 - Alpha",
             "Programming Language :: Python :: 3",

@@ -55,7 +55,8 @@ def main():
             for scraper in scrapers:
                 scrapers[scraper]["should_quit"].set()
             logging.info("Received message to quit.")
-            socket_tools.send(sock=cli_connection, msg="Quitting the manager...")
+            socket_tools.send(
+                sock=cli_connection, msg="Quitting the manager...")
 
         # If the manager is ordered to add a scraper, it checks if the
         # requirement for adding a scraper is met, and then creates the scraper
@@ -69,7 +70,9 @@ def main():
 
             # Checks to see if a scraper_name already exists in the scrapers dictionary.
             if scraper_name in scrapers:
-                socket_tools.send(sock=cli_connection, msg="You can't use the same name for multiple scrapers.")
+                socket_tools.send(
+                    sock=cli_connection,
+                    msg="You can't use the same name for multiple scrapers.")
             else:
                 # Setting the event (later passed to and monitored by the
                 # scraper) tells the scraper when to quit.
@@ -79,17 +82,25 @@ def main():
                 # The scraper process is started using the multiprocessing
                 # so as to not block the manager. The kwargs to the manager are
                 # from the cli's message.
-                scraper_process = multiprocessing.Process(target=scraper.create_scraper, kwargs=scraper_kwargs)
+                scraper_process = multiprocessing.Process(
+                    target=scraper.create_scraper, kwargs=scraper_kwargs)
                 scraper_process.start()
-                scrapers[scraper_name] = {"process": scraper_process, "should_quit": should_quit}
+                scrapers[scraper_name] = {
+                    "process": scraper_process,
+                    "should_quit": should_quit
+                }
                 logging.info("Started a new scraper.")
-                logging.debug(f"New scraper: name = {scraper_name}, pid = {scraper_process.pid}")
-                socket_tools.send(sock=cli_connection, msg="Successfully added scraper.")
+                logging.debug(
+                    f"New scraper: name = {scraper_name}, pid = {scraper_process.pid}"
+                )
+                socket_tools.send(
+                    sock=cli_connection, msg="Successfully added scraper.")
 
         # If ordered to list, the scraper sends a message to the cli a list
         # containing the names of currently active scrapers.
         elif prefix == "list":
-            socket_tools.send(sock=cli_connection, msg=str([kw for kw in scrapers]))
+            socket_tools.send(
+                sock=cli_connection, msg=str([kw for kw in scrapers]))
 
         # If ordered to stop a scraper, the manager first checks for the
         # scraper's existence and then signals it to quit.
@@ -101,11 +112,17 @@ def main():
                 # main loop to exit.
                 scrapers[scraper_name]["should_quit"].set()
                 logging.info("Sent signal for a scraper to exit.")
-                logging.debug(f"Exiting scraper: name = {scraper_name}, pid = {scrapers[scraper_name]['process'].pid}")
-                socket_tools.send(sock=cli_connection, msg="Successfully stopped scraper named " + scraper_name)
+                logging.debug(
+                    f"Exiting scraper: name = {scraper_name}, pid = {scrapers[scraper_name]['process'].pid}"
+                )
+                socket_tools.send(
+                    sock=cli_connection,
+                    msg="Successfully stopped scraper named " + scraper_name)
                 del scrapers[scraper_name]
             else:
-                socket_tools.send(sock=cli_connection, msg="There is no scraper named " + scraper_name)
+                socket_tools.send(
+                    sock=cli_connection,
+                    msg="There is no scraper named " + scraper_name)
 
         cli_connection.close()
 
@@ -123,7 +140,8 @@ def create_manager():
     # manager and the cli.
     manager_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     manager_socket.bind(".craigslist_monitor_socket")
-    os.chmod(".craigslist_monitor_socket", stat.S_IROTH | stat.S_IWOTH | stat.S_IWGRP | stat.S_IRGRP | stat.S_IRUSR | stat.S_IWUSR)
+    os.chmod(".craigslist_monitor_socket", stat.S_IROTH | stat.S_IWOTH
+             | stat.S_IWGRP | stat.S_IRGRP | stat.S_IRUSR | stat.S_IWUSR)
     manager_socket.listen(1)
 
     log_file = open("log", "w+")
@@ -137,7 +155,11 @@ def create_manager():
 
     # To keep the log_file, manager_socket, and pid_file accessible after
     # opening the daemon, they are specified to be preserved.
-    daemon_context.files_preserve = [manager_socket.fileno(), log_file.fileno(), pid_file.fileno(), logging.root.handlers[0].stream.fileno()] 
+    daemon_context.files_preserve = [
+        manager_socket.fileno(),
+        log_file.fileno(),
+        pid_file.fileno(), logging.root.handlers[0].stream.fileno()
+    ]
 
     # The manager daemon's stderr and stdout is set to be sent to the log_file.
     daemon_context.stderr = log_file

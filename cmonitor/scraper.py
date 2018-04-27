@@ -51,7 +51,6 @@ class item_scraper():
                 return True
         else:
             return False
-            
 
     def update_page(self):
         self.parsed_html = html.fromstring(requests.get(self.monitor_url).text)
@@ -59,7 +58,7 @@ class item_scraper():
     def check_for_new_items(self):
         while True:
             self.update_page()
-            
+
             # All unprocessed item ids are stored in relation to the html that
             # contains their data.
             new_items = self.get_new_items()
@@ -72,7 +71,7 @@ class item_scraper():
             while new_item_id not in self.last_item_ids:
                 self.last_item_ids.appendleft(new_item_id)
                 properties = self.parse_item(new_item)
-                
+
                 if self.complies_to_options(properties):
                     log("Found new item-", properties)
 
@@ -81,7 +80,9 @@ class item_scraper():
 
             # If the scraper does not receive a signal to quit, it proceeds to
             # check for new items.
-            if self.wait(random.randrange(self.options["refresh"][0], self.options["refresh"][1])):
+            if self.wait(
+                    random.randrange(self.options["refresh"][0],
+                                     self.options["refresh"][1])):
                 log("Stopped scraper.")
                 log_file.close()
                 break
@@ -89,7 +90,9 @@ class item_scraper():
     # Returns a generator that upon each iteration returns a new item from the
     # craigslist html.
     def get_new_items(self):
-        return (item for item in self.parsed_html.xpath("//li[@class=\"result-row\"]"))
+        return (
+            item
+            for item in self.parsed_html.xpath("//li[@class=\"result-row\"]"))
 
     # Checks to see if the item's properties (name and renewal status) comply
     # to the user's settings.
@@ -103,21 +106,28 @@ class item_scraper():
             return False
 
         return True
-    
+
     # Parses craigslist html of a specific item for its properties.
     def parse_item(self, item):
-            link = item.xpath("./a/@href")[0]
-            name = item.xpath("(.//a)[2]/text()")[0]
-            time = item.xpath(".//time/@title")[0]
-            is_renewal = bool(item.xpath("./@data-repost-of"))
+        link = item.xpath("./a/@href")[0]
+        name = item.xpath("(.//a)[2]/text()")[0]
+        time = item.xpath(".//time/@title")[0]
+        is_renewal = bool(item.xpath("./@data-repost-of"))
 
-            price = item.xpath("(.//span[@class=\"result-price\"])[1]/text()")
-            price = price[0] if price else "Price not listed"
-            location = item.xpath(".//span[@class=\"result-hood\"]/text()")
-            location = location[0] if location else "Location not listed"
+        price = item.xpath("(.//span[@class=\"result-price\"])[1]/text()")
+        price = price[0] if price else "Price not listed"
+        location = item.xpath(".//span[@class=\"result-hood\"]/text()")
+        location = location[0] if location else "Location not listed"
 
-            properties = {"name": name, "price": price, "location": location, "time": time, "link": link, "is_renewal": is_renewal}
-            return properties
+        properties = {
+            "name": name,
+            "price": price,
+            "location": location,
+            "time": time,
+            "link": link,
+            "is_renewal": is_renewal
+        }
+        return properties
 
 
 # Flushes the stdout of the scraper (a file) so that output is live.
@@ -125,8 +135,10 @@ def log(*args):
     print(*args)
     log_file.flush()
 
+
 # Interface for creating the scraper.
-def create_scraper(monitor, renewals, exclude_words, should_quit, output, time_refresh):
+def create_scraper(monitor, renewals, exclude_words, should_quit, output,
+                   time_refresh):
     import os
     global log_file
 
@@ -142,4 +154,3 @@ def create_scraper(monitor, renewals, exclude_words, should_quit, output, time_r
     }
 
     item_scraper(monitor, options, should_quit)
-

@@ -1,10 +1,10 @@
 # A small socket handling module to make communication between the cli and
-# the manager easier. 
+# the manager easier.
 #
 # The first 6 characters of a message sent by this module contain the length of
-# the actual message. The receive function reads these first six digits and 
+# the actual message. The receive function reads these first six digits and
 # and uses them to obtain the actual message in one receive.
-# 
+#
 import socket
 
 
