@@ -1,19 +1,18 @@
 from setuptools import setup, find_packages
 from os import path
 import sys
-import markdown
 
 if sys.platform == "win32":
     raise Exception("This package is incompatable with Windows.")
 
 my_loc = path.abspath(path.dirname(__file__))
 
-with open(path.join(my_loc, 'README.rst'), encoding='utf-8') as readme:
+with open(path.join(my_loc, "README.rst"), "r") as readme:
     long_description = readme.read()
 
 setup(
         name="craigslist_monitor",
-        version="0.1",
+        version="0.1.3",
         license="MIT",
         packages=find_packages(),
         python_requires="~=3.0",

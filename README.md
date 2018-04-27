@@ -10,7 +10,7 @@ First, create a manager which will oversee active scrapers:
 ```
 cmonitor manager
 ```
-#### _If cmonitor is not installed as a script, try re-installing with_``sudo pip install craigslist-monitor``
+#### _If cmonitor is not installed as a script, try re-installing with_ ``sudo pip install craigslist-monitor``
 
 Next, to add a scraper, three things must be specified in the following order:
 1. The name of the scraper (used for stopping the scraper).
