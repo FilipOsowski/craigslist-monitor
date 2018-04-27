@@ -12,7 +12,7 @@ with open(path.join(my_loc, "README.rst"), "r") as readme:
 
 setup(
         name="craigslist_monitor",
-        version="0.1.3",
+        version="0.1.4",
         license="MIT",
         packages=find_packages(),
         python_requires="~=3.0",
