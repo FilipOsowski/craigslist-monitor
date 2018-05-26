@@ -42,7 +42,7 @@ def main():
 
         print("Received: " + cli_output)
         logging.info("Received message from cli.")
-        logging.debug(f"Received: {cli_output}")
+        logging.debug("Received: %s" % cli_output)
 
         # The manager performs an action depending on the prefix to the cli's
         # message. The manager also sends a message to the (waiting)
@@ -91,7 +91,7 @@ def main():
                 }
                 logging.info("Started a new scraper.")
                 logging.debug(
-                    f"New scraper: name = {scraper_name}, pid = {scraper_process.pid}"
+                    "New scraper: name = %s, pid = %d" % (scraper_name, scraper_process.pid)
                 )
                 socket_tools.send(
                     sock=cli_connection, msg="Successfully added scraper.")
@@ -113,7 +113,7 @@ def main():
                 scrapers[scraper_name]["should_quit"].set()
                 logging.info("Sent signal for a scraper to exit.")
                 logging.debug(
-                    f"Exiting scraper: name = {scraper_name}, pid = {scrapers[scraper_name]['process'].pid}"
+                    "Exiting scraper: name = %d, pid = %s" % (scraper_name, scrapers[scraper_name]['process'].pid)
                 )
                 socket_tools.send(
                     sock=cli_connection,
