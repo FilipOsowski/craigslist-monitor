@@ -131,9 +131,13 @@ def create_manager():
     import socket
     import stat
     import os
+    import pathlib
     global log_file, pid_file, manager_socket, my_loc
 
-    my_loc = os.path.dirname(os.path.realpath(__file__))
+    # The manager's working directory is created and set in the user's home directory
+    home_dir = str(pathlib.Path.home())
+    my_loc = os.path.join(home_dir, ".craigslist_monitor")
+    os.mkdir(my_loc)
     os.chdir(my_loc)
 
     # Creates the unix domain socket for communication with between the
@@ -178,10 +182,10 @@ def create_manager():
 # Closes and removes resources that are unnecessary when the manager
 # is not running.
 def clean_up():
-    os.remove(".pid")
-    os.remove(".craigslist_monitor_socket")
+    import shutil
     log_file.close()
     manager_socket.close()
+    shutil.rmtree(my_loc)
     print("Successfully exited manager.\n")
 
 

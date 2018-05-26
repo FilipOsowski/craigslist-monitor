@@ -11,11 +11,13 @@ import socket
 # Uses a newly created socket or one that is passed in to send a message
 # between the cli and the manager.
 def send(msg, sock=None):
-    import os
-
     if not sock:
+        import os
+        import pathlib
+
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        my_loc = os.path.dirname(os.path.abspath(__file__))
+        # my_loc = os.path.dirname(os.path.abspath(__file__))
+        my_loc = os.path.join(str(pathlib.Path.home()), ".craigslist_monitor")
         os.chdir(my_loc)
         sock.connect(".craigslist_monitor_socket")
 

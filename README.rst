@@ -20,11 +20,11 @@ First, create a manager which will oversee active scrapers:
 
 | **If cmonitor is not installed as a script, try re-installing with** ``sudo pip install craigslist-monitor``
 
-Next, to add a scraper, three things must be specified in the following
-order: 1. The name of the scraper (used for stopping the scraper). 2.
-The name of the item to be searched and monitored **or** the url of a
-craigslist search. 3. The file that the scraper will output details of
-new items to.
+Next, to add a scraper, three things must be specified in the following order:
+
+1. The name of the scraper (used for stopping the scraper).
+2. The name of the item to be searched and monitored __or__ the url of a craigslist search.
+3. The file that the scraper will output details of new items to.
 
 ::
 

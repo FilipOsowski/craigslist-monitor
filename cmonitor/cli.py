@@ -1,5 +1,6 @@
 import argparse
 import os
+import pathlib
 
 
 # A decorator that checks for the manager's existence and depending on the
@@ -10,7 +11,7 @@ def check_manager(should_exist):
     # file (created by the manager).
     def decorator(function):
         result = None
-        my_loc = os.path.dirname(os.path.abspath(__file__))
+        my_loc = os.path.join(str(pathlib.Path.home()), ".craigslist_monitor")
         try:
             with open(os.path.join(my_loc, ".pid")):
                 result = True
@@ -69,14 +70,9 @@ def manager(kwargs):
     @check_manager(should_exist=False)
     def start_manager():
 
-        # A manager requires the creation of a Unix Domain Socket and changing
-        # its permissions (so that the manager can be controlled w/o root).
-        if os.getuid() != 0:
-            print("You need root privileges to create the manager.")
-        else:
-            from cmonitor import manager
-            print("Creating the manager...")
-            manager.create_manager()
+        from cmonitor import manager
+        print("Creating the manager...")
+        manager.create_manager()
 
     # If a manager command is specified, it is submitted to the manager_options
     # function. Else, a manager is initialized.
