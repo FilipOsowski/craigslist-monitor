@@ -2,6 +2,11 @@
 A monitor for craigslist searches.  
 __*Does not work on Windows.__
 
+Install using
+```
+pip install craigslist-monitor
+```
+
 The craigslist monitor uses a command line interface to create web scrapers which monitor craigslist searches for new listings. A scraper monitoring a search will check periodically for new listings and output their details into a text file.
 
 ## Monitoring a craigslist search
